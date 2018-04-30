@@ -1,7 +1,7 @@
 # Copyright (c) 2018 Ultimaker B.V.
 # Cura is released under the terms of the LGPLv3 or higher.
 
-import os.path
+import os
 import urllib.parse
 import uuid
 from typing import Dict, Union
@@ -36,7 +36,12 @@ catalog = i18nCatalog("cura")
 #   from within QML. We want to be able to trigger things like removing a container
 #   when a certain action happens. This can be done through this class.
 class ContainerManager(QObject):
+
     def __init__(self, parent = None):
+        if ContainerManager.__instance is not None:
+            raise RuntimeError("Try to create singleton '%s' more than once" % self.__class__.__name__)
+        ContainerManager.__instance = self
+
         super().__init__(parent)
 
         self._application = Application.getInstance()
@@ -381,16 +386,6 @@ class ContainerManager(QObject):
         if container is not None:
             container.setMetaDataEntry("GUID", new_guid)
 
-    ##  Get the singleton instance for this class.
-    @classmethod
-    def getInstance(cls) -> "ContainerManager":
-        # Note: Explicit use of class name to prevent issues with inheritance.
-        if ContainerManager.__instance is None:
-            ContainerManager.__instance = cls()
-        return ContainerManager.__instance
-
-    __instance = None   # type: "ContainerManager"
-
     # Factory function, used by QML
     @staticmethod
     def createContainerManager(engine, js_engine):
@@ -470,3 +465,9 @@ class ContainerManager(QObject):
 
         container_list = [n.getContainer() for n in quality_changes_group.getAllNodes() if n.getContainer() is not None]
         self._container_registry.exportQualityProfile(container_list, path, file_type)
+
+    __instance = None
+
+    @classmethod
+    def getInstance(cls, *args, **kwargs) -> "ContainerManager":
+        return cls.__instance
